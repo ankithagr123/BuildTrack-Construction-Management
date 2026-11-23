@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1329">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/icon-192.png" type="image/png">
+  <title>BuildTrack — Offline</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, "Segoe UI", Arial, sans-serif; background: #f4f6fa; color: #162033; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; }
+    main { width: min(100%, 480px); padding: 36px; border: 1px solid #e1e6ef; border-radius: 20px; background: #fff; box-shadow: 0 20px 60px #0b132914; text-align: center; }
+    img { width: 76px; height: 76px; border-radius: 18px; }
+    h1 { margin: 22px 0 8px; color: #0b1329; font-size: 1.6rem; }
+    p { margin: 0; color: #586579; line-height: 1.65; }
+    button { margin-top: 24px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: #f47b20; color: #fff; font-size: .95rem; font-weight: 700; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #35b7ed; outline-offset: 3px; }
+    .note { margin-top: 18px; font-size: .82rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="assets/icon-192.png" alt="BuildTrack">
+    <h1>You’re offline</h1>
+    <p>BuildTrack needs its Flask server to sign in and load or save project records. This screen appears only when the server cannot be reached.</p>
+    <button type="button" id="retryConnection">Try to reconnect</button>
+    <p class="note" id="connectionStatus" aria-live="polite">Checking for the BuildTrack server…</p>
+    <p class="note">Your SQLite data remains on the BuildTrack server.</p>
+  </main>
+<script>
+  (function () {
+    const status = document.getElementById('connectionStatus');
+    let navigating = false;
+    async function reconnect() {
+      if (navigating) return;
+      try {
+        const response = await fetch(new URL('./api/health', location.href), { cache: 'no-store' });
+        const health = response.ok ? await response.json() : null;
+        if (health?.service === 'BuildTrack' && health.status === 'ok') {
+          navigating = true;
+          status.textContent = 'Server found. Opening BuildTrack…';
+          location.replace(new URL('./', location.href));
+          return;
+        }
+      } catch (_) { /* The server is still unreachable. */ }
+      status.textContent = 'Waiting for the BuildTrack server. This page will reconnect automatically.';
+    }
+    document.getElementById('retryConnection').addEventListener('click', reconnect);
+    reconnect();
+    window.setInterval(reconnect, 4000);
+  })();
+</script>
+</body>
+</html>
